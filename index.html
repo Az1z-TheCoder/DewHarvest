@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DewHarvest: AC condensate recovery and treatment calculator</title>
+<style>
+  :root { --bg:#f4f6f5; --card:#fff; --ink:#17201d; --muted:#5f6b67; --line:#d9dfdc;
+          --accent:#0f6e6a; --bar:#3a9c96; --warn:#b7791f; --bad:#b42318; --good:#2f7d4f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121615; --card:#1c2220; --ink:#edf2f0; --muted:#9aa6a2; --line:#313a37;
+            --accent:#5fc9c2; --bar:#3a9c96; --warn:#f2c94c; --bad:#ff7a6b; --good:#6fcf97; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:780px; margin:0 auto; padding:20px 16px 48px; }
+  h1 { font-size:1.5rem; margin:0 0 4px; } h2 { font-size:1.05rem; margin:0 0 12px; }
+  p.sub { color:var(--muted); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+  @media (max-width:520px) { .grid { grid-template-columns:1fr; } }
+  label { display:block; font-size:.85rem; color:var(--muted); margin-bottom:4px; }
+  input[type=number], select { width:100%; padding:8px 10px; font:inherit; color:var(--ink);
+    background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+  button { padding:9px 14px; font:inherit; font-weight:600; color:#fff; background:var(--accent);
+    border:0; border-radius:8px; cursor:pointer; } button:disabled { opacity:.5; }
+  .big { font-size:2.2rem; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
+  table { width:100%; border-collapse:collapse; font-size:.93rem; }
+  td, th { padding:6px 4px; border-bottom:1px solid var(--line); text-align:left; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .note { font-size:.85rem; color:var(--muted); } svg { width:100%; height:auto; display:block; }
+  code { background:var(--bg); padding:1px 5px; border-radius:4px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.8rem; font-weight:600; color:#fff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DewHarvest</h1>
+  <p class="sub">How much water an air conditioner pulls out of humid air, why that water is corrosive, and the chemical dosing that makes it stable enough to store and use.</p>
+
+  <div class="card">
+    <h2>1. How much water</h2>
+    <div class="grid">
+      <div><label for="tOut">Outdoor air temperature (°C)</label><input type="number" id="tOut" value="38" step="0.5"></div>
+      <div><label for="rh">Outdoor relative humidity (%)</label><input type="number" id="rh" value="60" step="1" min="1" max="100"></div>
+      <div><label for="flow">Fresh-air intake (m³/h)</label><input type="number" id="flow" value="1000" step="50" min="0"></div>
+      <div><label for="tCoil">Air temperature leaving the coil (°C)</label><input type="number" id="tCoil" value="12" step="0.5"></div>
+      <div><label for="hours">Hours of AC operation per day</label><input type="number" id="hours" value="12" step="1" min="0" max="24"></div>
+      <div><label for="press">Air pressure (kPa)</label><input type="number" id="press" value="101.3" step="0.1"></div>
+    </div>
+    <p style="margin:14px 0 0"><span class="big" id="lDay"></span> <span class="note">litres per day at these conditions</span></p>
+    <p class="note" id="qSub"></p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <div class="grid">
+      <div><label for="city">Run a full year of hourly weather</label>
+        <select id="city">
+          <option value="26.29,50.11">Dhahran</option><option value="24.71,46.68">Riyadh</option>
+          <option value="21.49,39.19">Jeddah</option><option value="25.28,51.52">Doha</option>
+          <option value="25.20,55.27">Dubai</option>
+        </select></div>
+      <div style="align-self:end"><button id="runYear">Load 2025 weather and run</button></div>
+    </div>
+    <p class="note" id="yearMsg">Uses hourly temperature and dew point from the Open-Meteo archive. Needs an internet connection.</p>
+    <svg id="yearChart" viewBox="0 0 640 240" style="display:none" role="img" aria-label="Condensate per month"></svg>
+  </div>
+
+  <div class="card">
+    <h2>2. Raw condensate chemistry</h2>
+    <div class="grid">
+      <div><label for="co2">CO₂ in the room air (ppm)</label><input type="number" id="co2" value="800" step="50" min="100"></div>
+      <div><label for="tW">Water temperature (°C)</label><input type="number" id="tW" value="20" step="1"></div>
+    </div>
+    <table style="margin-top:12px">
+      <tr><td>Predicted pH (pure water in equilibrium with that air)</td><td class="num" id="rawPH"></td></tr>
+      <tr><td>Dissolved CO₂ (as H₂CO₃*)</td><td class="num" id="rawCO2"></td></tr>
+      <tr><td>Bicarbonate</td><td class="num" id="rawHCO3"></td></tr>
+      <tr><td>Predicted conductivity at 25 °C</td><td class="num" id="rawEC"></td></tr>
+      <tr><td>Calcium, alkalinity</td><td class="num">0, 0</td></tr>
+    </table>
+    <p class="note">With no calcium and no alkalinity the water has no buffer and is undersaturated with every mineral, so it dissolves what it touches, including copper coil tubing.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. Treatment design: CO₂ dosing and a calcite contactor</h2>
+    <div class="grid">
+      <div><label for="target">Target hardness (mg/L as CaCO₃)</label><input type="number" id="target" value="60" step="5" min="1"></div>
+      <div><label for="swro">Desalination energy for comparison (kWh/m³)</label><input type="number" id="swro" value="3.5" step="0.1" min="0"></div>
+    </div>
+    <table style="margin-top:12px">
+      <tr><th>Design result</th><th class="num">Per litre</th><th class="num">Per day</th></tr>
+      <tr><td>CO₂ to inject</td><td class="num" id="dCO2"></td><td class="num" id="dCO2d"></td></tr>
+      <tr><td>Calcite (CaCO₃) dissolved</td><td class="num" id="dCal"></td><td class="num" id="dCald"></td></tr>
+      <tr><td>Final pH</td><td class="num" id="fPH"></td><td></td></tr>
+      <tr><td>Final alkalinity (as CaCO₃)</td><td class="num" id="fAlk"></td><td></td></tr>
+      <tr><td>Calcite saturation index</td><td class="num" id="fSI"></td><td></td></tr>
+      <tr><td>Desalination energy avoided</td><td></td><td class="num" id="eDay"></td></tr>
+    </table>
+    <svg id="phChart" viewBox="0 0 640 280" style="margin-top:12px" role="img" aria-label="pH as calcite dissolves"></svg>
+    <p class="note">Curve: pH of the CO₂-dosed water as calcite dissolves in the contactor. It stops where the water is exactly saturated with calcite (saturation index 0), so it neither dissolves more nor deposits scale.</p>
+  </div>
+
+  <div class="card">
+    <h2>4. Disinfection check</h2>
+    <table>
+      <tr><td>Share of free chlorine present as HOCl at the final pH</td><td class="num" id="hocl"></td></tr>
+      <tr><td>Share at the raw condensate pH</td><td class="num" id="hoclRaw"></td></tr>
+    </table>
+    <p class="note">HOCl is the strong disinfectant; OCl⁻ is much weaker. Raising pH for corrosion control lowers the HOCl share, so the two goals pull against each other.</p>
+  </div>
+
+  <div class="card">
+    <h2>5. My condensate sample</h2>
+    <div class="grid">
+      <div><label for="mPH">Measured pH</label><input type="number" id="mPH" step="0.01" placeholder="e.g. 6.4"></div>
+      <div><label for="mEC">Measured conductivity (µS/cm)</label><input type="number" id="mEC" step="0.1" placeholder="e.g. 18"></div>
+      <div><label for="mAlk">Measured alkalinity (mg/L as CaCO₃), optional</label><input type="number" id="mAlk" step="0.1" placeholder="from titration"></div>
+    </div>
+    <div id="cmp" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Model and limits</h2>
+    <p class="note"><b>Water quantity.</b> Mass balance on water vapour across the cooling coil: condensate = dry-air mass flow × (W<sub>outdoor</sub> − W<sub>coil</sub>), where W is the humidity ratio 0.622·e/(P − e) and the air leaves the coil saturated. Saturation vapour pressure from the Magnus equation (Alduchov and Eskridge 1996). Only moisture brought in with fresh air is counted; moisture from people and infiltration is not.</p>
+    <p class="note"><b>Carbonate chemistry.</b> Henry's law for CO₂, the two dissociation steps of carbonic acid, water autoionisation and a charge balance, solved for pH by bisection. Equilibrium constants and calcite solubility as functions of temperature from Plummer and Busenberg (1982). Treatment: CO₂ is added, then CaCO₃ dissolves in a closed contactor (each mole adds one mole of calcium, one of carbon and two equivalents of alkalinity) until [Ca²⁺][CO₃²⁻] = K<sub>sp</sub>. The CO₂ dose is solved so that the dissolved calcite equals the hardness target.</p>
+    <p class="note"><b>Disinfection.</b> HOCl ⇌ H⁺ + OCl⁻ with pK<sub>a</sub> from Morris (1966).</p>
+    <p class="note"><b>Limits.</b> Activity coefficients are taken as 1 (reasonable below about 2 mmol/L ionic strength). Copper, zinc, ammonia, dust and microbes are not modelled, and real contactors stop slightly short of equilibrium. The default hardness target and desalination energy are editable assumptions. This is a design-comparison tool. It does not certify water as safe to drink.</p>
+  </div>
+</main>
+
+<script>
+// ================= Water quantity (psychrometrics) =================
+
+// Saturation vapour pressure of water, Pa (Magnus form, T in Celsius)
+function pSat(tC) { return 610.94 * Math.exp(17.625 * tC / (tC + 243.04)); }
+
+// Humidity ratio, kg water per kg dry air, from vapour pressure e and total pressure P (Pa)
+function humidityRatio(e, P) { return 0.622 * e / (P - e); }
+
+// Condensate rate in kg/h (same as L/h) for outdoor air cooled to a saturated coil state.
+// e is the vapour pressure of the outdoor air in Pa.
+function condensateRate(tOutC, e, flowM3h, tCoilC, P) {
+  const wOut = humidityRatio(e, P);
+  const wCoil = humidityRatio(pSat(tCoilC), P);
+  const dryAirDensity = (P - e) / (287.05 * (tOutC + 273.15));   // kg dry air per m3
+  return Math.max(0, flowM3h * dryAirDensity * (wOut - wCoil));
+}
+
+// ================= Carbonate chemistry =================
+
+// Equilibrium constants at temperature tC (mol/L units, activity coefficients = 1)
+function constants(tC) {
+  const T = tC + 273.15, L = Math.log10(T);
+  return {
+    KH:  Math.pow(10, 108.3865 + 0.01985076 * T - 6919.53 / T - 40.45154 * L + 669365 / (T * T)),
+    K1:  Math.pow(10, -356.3094 - 0.06091964 * T + 21834.37 / T + 126.8339 * L - 1684915 / (T * T)),
+    K2:  Math.pow(10, -107.8871 - 0.03252849 * T + 5151.79 / T + 38.92561 * L - 563713.9 / (T * T)),
+    Ksp: Math.pow(10, -171.9065 - 0.077993 * T + 2839.319 / T + 71.595 * L),
+    Kw:  Math.pow(10, -4470.99 / T + 6.0875 - 0.01706 * T),
+    Ka:  Math.pow(10, -(3000 / T - 10.0686 + 0.0253 * T))     // HOCl
+  };
+}
+
+// Find x in [lo, hi] where f(x) = 0, for f increasing in x
+function bisect(f, lo, hi) {
+  for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (f(mid) < 0) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+
+// Carbonate species (mol/L) for total inorganic carbon CT at a given pH
+function species(CT, pH, k) {
+  const H = Math.pow(10, -pH), D = H * H + k.K1 * H + k.K1 * k.K2;
+  return { H: H, OH: k.Kw / H, H2CO3: CT * H * H / D, HCO3: CT * k.K1 * H / D, CO3: CT * k.K1 * k.K2 / D };
+}
+
+// pH of a closed sample with known alkalinity (eq/L) and total inorganic carbon (mol/L)
+function pHclosed(alk, CT, k) {
+  return bisect(pH => { const s = species(CT, pH, k); return s.HCO3 + 2 * s.CO3 + s.OH - s.H - alk; }, 0, 14);
+}
+
+// Water in equilibrium with air at CO2 mole fraction ppm. alk = 0 for pure condensate.
+function openToAir(ppm, alk, k) {
+  const c = k.KH * ppm * 1e-6;                                   // dissolved CO2, Henry's law
+  const pH = bisect(p => { const H = Math.pow(10, -p);
+    return k.K1 * c / H + 2 * k.K1 * k.K2 * c / (H * H) + k.Kw / H - H - alk; }, 0, 14);
+  const H = Math.pow(10, -pH);
+  return { pH: pH, alk: alk, CT: c * (1 + k.K1 / H + k.K1 * k.K2 / (H * H)), Ca: 0 };
+}
+
+// Calcite saturation index: log10 of [Ca][CO3] / Ksp. Negative means the water dissolves calcite.
+function saturationIndex(Ca, CT, pH, k) { return Math.log10(Ca * species(CT, pH, k).CO3 / k.Ksp); }
+
+// State after adding co2 (mol/L) and dissolving x mol/L of CaCO3 into water w
+function afterTreatment(w, co2, x, k) {
+  const alk = w.alk + 2 * x, CT = w.CT + co2 + x, Ca = w.Ca + x;
+  const pH = pHclosed(alk, CT, k);
+  return { pH: pH, alk: alk, CT: CT, Ca: Ca, SI: x > 0 ? saturationIndex(Ca, CT, pH, k) : -Infinity };
+}
+
+// Calcite (mol/L) that dissolves before the water becomes saturated, for a given CO2 dose
+function calciteAtEquilibrium(w, co2, k) {
+  return bisect(x => afterTreatment(w, co2, x, k).SI, 1e-9, 0.02);
+}
+
+// CO2 dose (mol/L) so that the calcite dissolved equals the hardness target (mol/L)
+function designTreatment(w, targetMol, k) {
+  let co2 = 0;
+  if (calciteAtEquilibrium(w, 0, k) < targetMol)
+    co2 = bisect(d => calciteAtEquilibrium(w, d, k) - targetMol, 0, 0.02);
+  const x = calciteAtEquilibrium(w, co2, k);
+  return Object.assign({ co2: co2, calcite: x }, afterTreatment(w, co2, x, k));
+}
+
+// Conductivity at 25 C in uS/cm from limiting molar ionic conductivities (S cm2/mol)
+function conductivity(s, Ca) {
+  return (349.8 * s.H + 198.0 * s.OH + 44.5 * s.HCO3 + 138.6 * s.CO3 + 119.0 * Ca) * 1000;
+}
+
+// Fraction of free chlorine present as HOCl
+function hoclFraction(pH, k) { const H = Math.pow(10, -pH); return H / (H + k.Ka); }
+
+const M_CACO3 = 100.09, M_CO2 = 44.01;   // g/mol
+
+// ================= UI =================
+const $ = id => document.getElementById(id);
+const num = id => parseFloat($(id).value);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let litresPerDay = 0;
+
+function update() {
+  // 1. quantity
+  const P = num("press") * 1000;
+  const e = pSat(num("tOut")) * num("rh") / 100;
+  const rate = condensateRate(num("tOut"), e, num("flow"), num("tCoil"), P);
+  litresPerDay = rate * num("hours");
+  $("lDay").textContent = litresPerDay.toFixed(0);
+  $("qSub").textContent = rate.toFixed(2) + " L/h. Outdoor air holds " +
+    (humidityRatio(e, P) * 1000).toFixed(1) + " g of water per kg of dry air; air leaving the coil holds " +
+    (humidityRatio(pSat(num("tCoil")), P) * 1000).toFixed(1) + " g/kg.";
+
+  // 2. raw chemistry
+  const k = constants(num("tW"));
+  const raw = openToAir(num("co2"), 0, k);
+  const rs = species(raw.CT, raw.pH, k);
+  $("rawPH").textContent = raw.pH.toFixed(2);
+  $("rawCO2").textContent = (rs.H2CO3 * M_CO2 * 1000).toFixed(2) + " mg/L as CO₂";
+  $("rawHCO3").textContent = (rs.HCO3 * 61.02 * 1000).toFixed(3) + " mg/L";
+  const ecRaw = conductivity(species(raw.CT, raw.pH, constants(25)), 0);
+  $("rawEC").textContent = ecRaw.toFixed(2) + " µS/cm";
+
+  // 3. treatment
+  const d = designTreatment(raw, num("target") / (M_CACO3 * 1000), k);
+  const mg = (mol, M) => mol * M * 1000;
+  $("dCO2").textContent = mg(d.co2, M_CO2).toFixed(1) + " mg";
+  $("dCal").textContent = mg(d.calcite, M_CACO3).toFixed(1) + " mg";
+  $("dCO2d").textContent = (mg(d.co2, M_CO2) * litresPerDay / 1000).toFixed(1) + " g";
+  $("dCald").textContent = (mg(d.calcite, M_CACO3) * litresPerDay / 1000).toFixed(1) + " g";
+  $("fPH").textContent = d.pH.toFixed(2);
+  $("fAlk").textContent = (d.alk * 50.045 * 1000).toFixed(1) + " mg/L";
+  $("fSI").textContent = d.SI.toFixed(2);
+  $("eDay").textContent = (litresPerDay / 1000 * num("swro")).toFixed(2) + " kWh";
+  drawPH(raw, d, k);
+
+  // 4. disinfection
+  $("hocl").textContent = (hoclFraction(d.pH, k) * 100).toFixed(0) + " %";
+  $("hoclRaw").textContent = (hoclFraction(raw.pH, k) * 100).toFixed(0) + " %";
+
+  // 5. sample comparison
+  compare(raw, ecRaw, k);
+}
+
+function drawPH(raw, d, k) {
+  const W = 640, H = 280, L = 48, R = 16, T = 14, B = 44, pts = [];
+  for (let i = 0; i <= 40; i++) { const x = d.calcite * i / 40; pts.push([x, afterTreatment(raw, d.co2, x, k).pH]); }
+  const xMax = d.calcite * M_CACO3 * 1000, yMin = 3, yMax = 10;
+  const X = mol => L + (mol * M_CACO3 * 1000) / xMax * (W - L - R), Y = p => T + (yMax - p) / (yMax - yMin) * (H - T - B);
+  let s = "";
+  for (let p = yMin; p <= yMax; p++) {
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(p)}" y2="${Y(p)}" stroke="${css("--line")}"/>`;
+    s += `<text x="${L - 8}" y="${Y(p) + 4}" text-anchor="end" font-size="12" fill="${css("--muted")}">${p}</text>`;
+  }
+  for (let i = 0; i <= 4; i++) { const v = xMax * i / 4;
+    s += `<text x="${L + i / 4 * (W - L - R)}" y="${H - B + 18}" text-anchor="middle" font-size="12" fill="${css("--muted")}">${v.toFixed(0)}</text>`; }
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="${css("--muted")}">Calcite dissolved (mg/L)</text>`;
+  s += `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="${css("--muted")}" transform="rotate(-90 14 ${(T + H - B) / 2})">pH</text>`;
+  s += `<polyline fill="none" stroke="${css("--accent")}" stroke-width="2.5" points="${pts.map(q => X(q[0]) + "," + Y(q[1])).join(" ")}"/>`;
+  s += `<circle cx="${X(d.calcite)}" cy="${Y(d.pH)}" r="6" fill="${css("--ink")}"/>`;
+  s += `<text x="${X(d.calcite) - 10}" y="${Y(d.pH) - 10}" text-anchor="end" font-size="12" fill="${css("--ink")}">saturated, pH ${d.pH.toFixed(2)}</text>`;
+  $("phChart").innerHTML = s;
+}
+
+function compare(raw, ecRaw, k) {
+  const mPH = num("mPH"), mEC = num("mEC"), mAlk = num("mAlk");
+  if (isNaN(mPH) && isNaN(mEC)) { $("cmp").innerHTML = '<p class="note">Enter your readings to compare them with the pure-condensate prediction.</p>'; return; }
+  let h = '<table><tr><th></th><th class="num">Model</th><th class="num">Measured</th></tr>';
+  if (!isNaN(mPH)) h += `<tr><td>pH</td><td class="num">${raw.pH.toFixed(2)}</td><td class="num">${mPH.toFixed(2)}</td></tr>`;
+  if (!isNaN(mEC)) h += `<tr><td>Conductivity (µS/cm)</td><td class="num">${ecRaw.toFixed(2)}</td><td class="num">${mEC.toFixed(1)}</td></tr>`;
+  h += "</table>";
+  const notes = [];
+  if (!isNaN(mEC) && mEC > 3 * ecRaw + 2) notes.push("Measured conductivity is well above the pure-water prediction, so the sample carries dissolved ions the model leaves out (metals from the coil, dust, ammonia).");
+  if (!isNaN(mPH) && mPH - raw.pH > 0.5) notes.push("Measured pH is higher than predicted, which points to some alkalinity in the sample.");
+  if (!isNaN(mPH) && raw.pH - mPH > 0.5) notes.push("Measured pH is lower than predicted, which points to more dissolved CO₂ than assumed or an acidic contaminant.");
+  if (!isNaN(mAlk)) {
+    const withAlk = openToAir(num("co2"), mAlk / (50.045 * 1000), k);
+    notes.push("With your measured alkalinity of " + mAlk + " mg/L, the model predicts pH " + withAlk.pH.toFixed(2) + " in equilibrium with the room air.");
+  }
+  $("cmp").innerHTML = h + notes.map(n => `<p class="note">${n}</p>`).join("");
+}
+
+// Full-year run from hourly archive weather
+async function runYear() {
+  const [lat, lon] = $("city").value.split(",");
+  const url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon +
+    "&start_date=2025-01-01&end_date=2025-12-31&hourly=temperature_2m,dew_point_2m&timezone=auto";
+  $("runYear").disabled = true; $("yearMsg").textContent = "Loading weather…";
+  try {
+    const data = await (await fetch(url)).json();
+    const t = data.hourly.temperature_2m, td = data.hourly.dew_point_2m, time = data.hourly.time;
+    const P = num("press") * 1000, months = new Array(12).fill(0), share = num("hours") / 24;
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] === null || td[i] === null) continue;
+      const m = parseInt(time[i].slice(5, 7), 10) - 1;
+      months[m] += condensateRate(t[i], pSat(td[i]), num("flow"), num("tCoil"), P) * share;
+    }
+    const total = months.reduce((a, b) => a + b, 0);
+    $("yearMsg").textContent = "Year total: " + (total / 1000).toFixed(1) + " m³ (" + total.toFixed(0) +
+      " L), or " + (total / 365).toFixed(0) + " L per day on average. Operating hours are spread evenly across the day.";
+    drawYear(months);
+  } catch (err) {
+    $("yearMsg").textContent = "Could not load weather data (" + err.message + "). The single-condition result above still works.";
+  }
+  $("runYear").disabled = false;
+}
+
+function drawYear(months) {
+  const W = 640, H = 240, L = 52, R = 12, T = 12, B = 30, max = Math.max.apply(null, months) || 1;
+  const names = ["J","F","M","A","M","J","J","A","S","O","N","D"], bw = (W - L - R) / 12;
+  let s = `<text x="14" y="${(T + H - B) / 2}" text-anchor="middle" font-size="12" fill="${css("--muted")}" transform="rotate(-90 14 ${(T + H - B) / 2})">Litres per month</text>`;
+  s += `<text x="${L - 6}" y="${T + 10}" text-anchor="end" font-size="12" fill="${css("--muted")}">${max.toFixed(0)}</text>`;
+  months.forEach((v, i) => {
+    const h = v / max * (H - T - B);
+    s += `<rect x="${L + i * bw + 4}" y="${H - B - h}" width="${bw - 8}" height="${h}" rx="3" fill="${css("--bar")}"/>`;
+    s += `<text x="${L + i * bw + bw / 2}" y="${H - 10}" text-anchor="middle" font-size="12" fill="${css("--muted")}">${names[i]}</text>`;
+  });
+  $("yearChart").innerHTML = s; $("yearChart").style.display = "block";
+}
+
+document.querySelectorAll("input, select").forEach(el => el.addEventListener("input", update));
+$("runYear").addEventListener("click", runYear);
+update();
+</script>
+</body>
+</html>
