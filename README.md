@@ -27,26 +27,27 @@ Condensate starts out close to distilled water, so it looks like a free resource
 | Pure condensate in 800 ppm room air at 20 °C | pH about 5.4, conductivity about 1.4 µS/cm |
 | Target hardness 60 mg/L as CaCO₃ | about 26 mg/L CO₂ and 60 mg/L calcite, final pH about 8.1, saturation index 0 |
 
-## Test against a real sample
+## Test against real samples
 
-I collected condensate from an air conditioner on Nov 25, 2026 and tested it the same day.
+I collected condensate from an air conditioner twice on Nov 25, 2026 and tested each collection the same day.
 
-| | Model (pure water, 800 ppm CO₂, 20 °C) | My sample |
-|---|---|---|
-| pH | about 5.4 | between 7 and 8 |
-| Conductivity | about 1.4 µS/cm | 42 µS/cm |
+| | Model (pure water, 800 ppm CO₂, 20 °C) | Sample A (first collection) | Sample B (repeat collection) |
+|---|---|---|---|
+| pH | about 5.4 | between 7 and 8 | about 5.8 |
+| Conductivity | about 1.4 µS/cm | 42 µS/cm | 4.2 µS/cm |
 
-Instruments: wide-range pH indicator paper (1 to 14, one colour step per pH unit) and a handheld TDS & EC pen meter. Photos of the strips and the meter reading are in `sample-test/`.
+Instruments: pH indicator paper and a handheld TDS & EC pen meter. Photos of sample A's strips and meter reading are in `sample-test/`. Sample B has no photos in this repository.
 
-The sample did not match the pure-water prediction. Its conductivity was about 30 times higher and its pH was near neutral, not acidic. So the water had already picked up dissolved material somewhere between the coil and my glass. I do not know what that material is. Dust on the coil, the metal of the coil and drain pan, and the drain line are all candidates.
+The two collections disagree with each other. Sample A had about 30 times the predicted conductivity and a near-neutral pH, so the water had picked up dissolved material before it reached my glass. Sample B came out much closer to the pure-water prediction: about 3 times the conductivity and a pH within half a unit. I have not tested what caused the difference.
 
-One explanation fits both numbers. If the ions were mostly calcium and bicarbonate, 42 µS/cm corresponds to roughly 0.4 meq/L of alkalinity, and water with that alkalinity in equilibrium with 800 ppm CO₂ sits near pH 7.5. That falls inside the range the strip showed. I did not measure alkalinity, so this is a consistent story and not a confirmed one.
+Neither sample is explained. I did not measure alkalinity. If the ions in each were mostly calcium and bicarbonate, sample A (42 µS/cm) corresponds to about 0.4 meq/L of alkalinity, and the model gives a pH near 7.5, which fits the strip. Sample B (4.2 µS/cm) corresponds to about 0.04 meq/L, and the model gives a pH near 6.5, against 5.8 on the paper. A gap of about 0.7 pH units is within what pH paper can resolve in weakly buffered water, but it means B is not an exact match either.
 
-What I take from the test:
+What I take from the tests:
 
-- The pure-water model in section 2 is a lower bound on minerals and pH. Condensate as it comes out of a real unit is not pure.
-- The sample was still low in minerals. Even if every ion were calcium bicarbonate, hardness would be about 20 mg/L as CaCO₃, a third of the 60 mg/L target, so remineralisation is still needed.
-- This is one sample, one unit and one day. Indicator paper is also known to be unreliable in weakly buffered water, so the pH reading is rough.
+- The pure-water model in section 2 is a lower bound on minerals and pH. Real condensate picked up dissolved material in sample A and a little in sample B.
+- Both samples were low in minerals. Even if every ion were calcium bicarbonate, hardness would be at most about 20 mg/L as CaCO₃ (A) and about 2 mg/L (B), against the 60 mg/L target, so remineralisation is still needed.
+- Two collections on the same day differed by a factor of ten in conductivity, so one measurement cannot stand for a unit.
+- These are two samples from one day. Indicator paper is coarse in weakly buffered water, and pen meters of this kind are known to be less reliable at very low conductivity, so B's 4.2 µS/cm is the less certain of the two conductivity readings.
 
 ## Method and sources
 
@@ -60,10 +61,10 @@ What I take from the test:
 ## Limits
 
 - Activity coefficients are taken as 1. That is reasonable for water this dilute (below about 2 mmol/L ionic strength).
-- Copper, zinc, ammonia, dust and microbes are not modelled. My sample shows real condensate does pick something up.
+- Copper, zinc, ammonia, dust and microbes are not modelled. My samples show real condensate picks up dissolved material, though how much varied between collections.
 - Only moisture brought in with fresh air is counted. Moisture from people and infiltration is not.
 - Real contactors stop slightly short of equilibrium.
-- The model has been compared with one home-tested sample (above), which it did not match.
+- The model has been compared with two home-tested samples (above). It matched one poorly and one fairly closely, and I have not explained why.
 - This is a design-comparison tool. It does not certify water as safe to drink.
 
 ## How to run
@@ -82,7 +83,7 @@ I used Claude (Anthropic) as a coding assistant. I chose the problem and the che
 
 ## Next steps
 
-- Test more samples, with alkalinity by titration and copper by test strip, to find out what the dissolved material is.
+- Test more samples, with alkalinity by titration and copper by test strip, to find out what the dissolved material is and why two collections differed.
 - Add an activity-coefficient correction (Davies equation).
 - Add a simple first-order model for how far a real contactor gets toward equilibrium.
 

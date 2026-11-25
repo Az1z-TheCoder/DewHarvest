@@ -36,19 +36,19 @@ HTML, CSS, JavaScript, SVG, Open-Meteo API, Claude (AI coding assistant)
 
 ## Challenges
 - The treatment design needs three solvers nested inside each other (pH inside calcite equilibrium inside CO₂ dose), and each has to stay stable across the whole input range.
-- My own sample disagreed with my model. Pure-water chemistry predicts pH 5.4 and almost no conductivity. The condensate I collected read 42 µS/cm and a pH between 7 and 8. I kept the pure-water model, now describe it as a lower bound, and reported the mismatch in the README.
+- My own samples disagreed with my model, and with each other. Pure-water chemistry predicts pH 5.4 and 1.4 µS/cm. The first condensate sample I collected read 42 µS/cm and pH 7 to 8. A repeat collection the same day read 4.2 µS/cm and about pH 5.8. I kept the pure-water model, now describe it as a lower bound, and reported both samples in the README.
 
 ## What I learned
-The step desalination plants use to stabilise their product water also applies to a drip tray. I also learned that condensate from a real unit is not the pure water the textbook assumes, and that I only found that out by testing it.
+The step desalination plants use to stabilise their product water also applies to a drip tray. I also learned that condensate from a real unit is not the pure water the textbook assumes, and that two collections on the same day can differ by a factor of ten. I only found that out by testing.
 
 ## Results
 - At 38 °C and 60% humidity, 1,000 m³/h of fresh air yields about 18 L/h of condensate.
 - The model puts pure, untreated condensate near pH 5.4 with about 1.4 µS/cm conductivity.
 - Reaching 60 mg/L hardness takes about 26 mg/L of CO₂ and 60 mg/L of calcite, and ends near pH 8.1 at saturation.
-- Real sample: condensate from an air conditioner, collected Nov 25, 2026, measured 42 µS/cm on a handheld TDS & EC meter and between pH 7 and 8 on wide-range indicator paper. That is about 30 times the predicted conductivity, so the water had picked up dissolved material I have not identified. If it were mostly calcium bicarbonate, the conductivity would mean about 0.4 meq/L of alkalinity and a pH near 7.5, which fits the strip. I did not measure alkalinity, so that explanation is not confirmed. It is one sample, and the pH paper is rough.
+- Real samples (Nov 25, 2026, condensate from an air conditioner, tested with a pen meter and pH paper): the first collection read 42 µS/cm and pH 7 to 8, and a repeat collection read 4.2 µS/cm and about pH 5.8, against a pure-water prediction of 1.4 µS/cm and pH 5.4. If the ions were calcium bicarbonate, the two readings would mean about 0.4 and 0.04 meq/L of alkalinity. I did not measure alkalinity, so that is unconfirmed. These are two samples from one day, and the pH paper is rough.
 
 ## What's next
-More real samples with alkalinity by titration and copper by test strip, an activity-coefficient correction, and a kinetic model of the calcite contactor.
+More real samples with alkalinity by titration and copper by test strip, to find out what the dissolved material is and why two collections differed, an activity-coefficient correction, and a kinetic model of the calcite contactor.
 
 ## Disclosure of earlier work and AI use
 Everything in the repository was built during the competition period, starting Nov 24, 2026. My earlier independent research on CO₂/R-1270 refrigerant blends (preprint doi 10.31224/8749) gave me the thermodynamics background. No code or results from it are reused. I used Claude as a coding assistant. I set the problem, the approach and the claims. Claude wrote the code and ran numerical checks under my direction. I have read the code and can explain it.

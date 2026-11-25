@@ -110,11 +110,11 @@
   <div class="card">
     <h2>5. My condensate sample</h2>
     <div class="grid">
-      <div><label for="mPH">Measured pH</label><input type="number" id="mPH" step="0.01" value="7.5"></div>
-      <div><label for="mEC">Measured conductivity (µS/cm)</label><input type="number" id="mEC" step="0.1" value="42"></div>
+      <div><label for="mPH">Measured pH</label><input type="number" id="mPH" step="0.01" value="5.8"></div>
+      <div><label for="mEC">Measured conductivity (µS/cm)</label><input type="number" id="mEC" step="0.1" value="4.2"></div>
       <div><label for="mAlk">Measured alkalinity (mg/L as CaCO₃), optional</label><input type="number" id="mAlk" step="0.1" placeholder="from titration"></div>
     </div>
-    <p class="note">Filled in with my sample from Nov 25, 2026: condensate from an air conditioner, 42 µS/cm on a handheld TDS &amp; EC meter, and pH between 7 and 8 on wide-range indicator paper (entered as 7.5). Change the numbers to compare your own sample.</p>
+    <p class="note">Two samples of condensate from an air conditioner, collected Nov 25, 2026, tested with a handheld TDS &amp; EC meter and pH paper. Sample A (first collection): 42 µS/cm, pH between 7 and 8 (enter 7.5). Sample B (repeat collection): 4.2 µS/cm, pH about 5.8. The fields start with sample B. Type sample A's numbers to compare it, or your own.</p>
     <div id="cmp" style="margin-top:12px"></div>
   </div>
 
@@ -299,6 +299,7 @@ function compare(raw, ecRaw, k) {
   if (!isNaN(mEC) && mEC > 3 * ecRaw + 2) notes.push("Measured conductivity is well above the pure-water prediction, so the sample carries dissolved ions the model leaves out (metals from the coil, dust, ammonia).");
   if (!isNaN(mPH) && mPH - raw.pH > 0.5) notes.push("Measured pH is higher than predicted, which points to some alkalinity in the sample.");
   if (!isNaN(mPH) && raw.pH - mPH > 0.5) notes.push("Measured pH is lower than predicted, which points to more dissolved CO₂ than assumed or an acidic contaminant.");
+  if (!isNaN(mPH) && !isNaN(mEC) && !notes.length) notes.push("Both readings are close to the pure-water prediction (conductivity within about three times, pH within half a unit).");
   if (!isNaN(mAlk)) {
     const withAlk = openToAir(num("co2"), mAlk / (50.045 * 1000), k);
     notes.push("With your measured alkalinity of " + mAlk + " mg/L, the model predicts pH " + withAlk.pH.toFixed(2) + " in equilibrium with the room air.");
