@@ -2,7 +2,7 @@
 
 A calculator for the water air conditioners throw away. It estimates how much there is, predicts its chemistry, and works out the dosing that would make it stable enough to store and use.
 
-Built for: STEM Innovation Challenge 2026, Engineering & Scientific Computing
+Built for: STEM Innovation Challenge 2026, Engineering & Scientific Computing  
 Author: Abdulaziz (solo), IB Diploma student, Dhahran, Saudi Arabia
 
 ## The problem
