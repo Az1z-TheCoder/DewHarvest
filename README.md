@@ -69,7 +69,7 @@ What I take from the tests:
 
 ## How to run
 
-Download `index.html` and open it in any browser. There is nothing to install and no build step. Section 5 opens with my sample readings already filled in. The full-year button needs an internet connection. Everything else works offline.
+Download `index.html` and open it in any browser. There is nothing to install and no build step. Section 5 opens with the readings from my sample B filled in. The full-year button needs an internet connection. Everything else works offline.
 
 ## What was built during the hackathon, and what came before
 

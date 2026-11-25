@@ -57,5 +57,5 @@ Everything in the repository was built during the competition period, starting N
 Abdulaziz (solo): problem definition, modelling choices, review, testing, documentation.
 
 ## Links to paste
-- Demo: upload the screenshots (screenshot-tool-top.png, screenshot-tool-sample.png, screenshot-github.png)
+- Demo: upload the screenshots (screenshot-tool-top.png, screenshot-tool-sample.png, screenshot-github.jpg)
 - Repository: https://github.com/Az1z-TheCoder/DewHarvest
