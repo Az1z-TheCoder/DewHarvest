@@ -2,7 +2,6 @@
 
 A calculator for the water air conditioners throw away. It estimates how much there is, predicts its chemistry, and works out the dosing that would make it stable enough to store and use.
 
-Live demo: (add your GitHub Pages link here)
 Built for: STEM Innovation Challenge 2026, Engineering & Scientific Computing
 Author: Abdulaziz (solo), IB Diploma student, Dhahran, Saudi Arabia
 
@@ -69,7 +68,7 @@ What I take from the test:
 
 ## How to run
 
-Open `index.html` in any browser. There is nothing to install and no build step. The full-year button needs an internet connection. Everything else works offline.
+Download `index.html` and open it in any browser. There is nothing to install and no build step. Section 5 opens with my sample readings already filled in. The full-year button needs an internet connection. Everything else works offline.
 
 ## What was built during the hackathon, and what came before
 
